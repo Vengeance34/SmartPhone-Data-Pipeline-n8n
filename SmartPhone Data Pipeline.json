@@ -1,0 +1,306 @@
+{
+  "name": "SmartPhone Data Pipeline",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "deec3654-affa-4ddc-9146-1424bdd906b4",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.restful-api.dev/objects",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -160,
+        -16
+      ],
+      "id": "e6366e1f-794d-428f-bad3-97a9d02e2d7b",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize node - returns items where item.json is each mobile object\nconst out = [];\n\n// HTTP Request node may return the array at various places. Try common spots.\nfor (const it of items) {\n  const j = it.json;\n\n  // If the response itself is an array\n  if (Array.isArray(j)) {\n    for (const obj of j) out.push({ json: obj });\n    continue;\n  }\n\n  // If response has a top-level property that is an array\n  if (j && typeof j === 'object') {\n    const candidates = ['data','items','results','mobiles'];\n    let found = false;\n    for (const c of candidates) {\n      if (Array.isArray(j[c])) {\n        for (const obj of j[c]) out.push({ json: obj });\n        found = true;\n        break;\n      }\n    }\n    if (found) continue;\n\n    // If j itself looks like a single mobile object, push it\n    if (j.id !== undefined && j.name !== undefined) {\n      out.push({ json: j });\n      continue;\n    }\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        -16
+      ],
+      "id": "6f643a43-7314-4975-b0bf-1e47de5232e5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\n\nfor (const it of items) {\n  const obj = it.json; // expected shape: { id, name, data: { Capacity: \"64 GB\", ... } }\n  // protect against missing data\n  const d = obj.data || {};\n\n  // possible capacity fields\n  const rawCap = d.Capacity ?? d.capacity ?? obj.Capacity ?? obj.capacity;\n  if (!rawCap) continue;\n\n  // extract numeric part (handles \"64\", \"64 GB\", 64)\n  const capNum = parseInt(String(rawCap).replace(/\\D/g,''), 10);\n  if (isNaN(capNum)) continue;\n\n  if (capNum >= 64) {\n    // flatten - take id, name, and all keys from data as top-level columns\n    const flat = { id: obj.id ?? null, name: obj.name ?? null };\n    for (const k of Object.keys(d)) {\n      // convert nested keys to safe column names\n      flat[k] = d[k];\n    }\n    out.push({ json: flat });\n  }\n}\n\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        256,
+        -16
+      ],
+      "id": "e85a68a0-8d24-4759-9184-76b7b9b10bba",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1OP9ZEZS02vMMV36bPH88dTrN4bG25yH7Bw2fZ-bfyfE",
+          "mode": "list",
+          "cachedResultName": "Mobile Details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OP9ZEZS02vMMV36bPH88dTrN4bG25yH7Bw2fZ-bfyfE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1OP9ZEZS02vMMV36bPH88dTrN4bG25yH7Bw2fZ-bfyfE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "capacity",
+              "displayName": "capacity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color",
+              "displayName": "color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Capacity",
+              "displayName": "Capacity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Screen size",
+              "displayName": "Screen size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Generation",
+              "displayName": "Generation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Price",
+              "displayName": "Price",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        464,
+        -16
+      ],
+      "id": "aad11e18-53f7-4a23-8137-b33aa639782a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "EsIXANi13Q6fzq4N",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "Mobile Details",
+          "sheetName": "Sheet1"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -16
+      ],
+      "id": "616d968b-67c8-4b27-bbfa-342bae3796cb",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "sendTo": "bdileepabd@gmail.com",
+        "subject": "Smart Phone Details",
+        "emailType": "text",
+        "message": "Hi There !\nThese are the Best Smart Phones Out There",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        880,
+        -16
+      ],
+      "id": "5a066383-bcfd-4337-a180-34ad8fb9bcc8",
+      "name": "Send a message",
+      "webhookId": "4b873070-3300-494e-93b7-524f3491e6f4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "DhPwZnEOzzD62Yz2",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "222bb9ab-d654-4dec-96c6-e629f2c598e7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c85aab2c6795f410b61ff10e81cd82504bb81e5111728a979055582c2e316cd5"
+  },
+  "id": "uChEWUIMo4LTsWTG",
+  "tags": []
+}
